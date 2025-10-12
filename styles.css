@@ -363,4 +363,13 @@ body{
 @media (max-width: 520px){
   .board{ top: 4%; width: min(60%, 640px); height: min(48%, 320px); }
 }
+@media (max-width: 480px) {
+  .hero-title {
+    font-size: 20px;
+  }
+  .lang--on-hero button {
+    padding: 4px 8px;
+    font-size: 13px;
+  }
+}
 
