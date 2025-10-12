@@ -363,43 +363,72 @@ body{
 @media (max-width: 520px){
   .board{ top: 4%; width: min(60%, 640px); height: min(48%, 320px); }
 }
-/* ==== Mobile adaptive fix for hero block ==== */
+/* ==== MOBILE FIX: Logo + title in one row, language panel below ==== */
 @media (max-width: 768px) {
   .hero-inner {
+    display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 8px 12px;
     text-align: center;
+    gap: 6px;
+    padding: 10px 12px;
+  }
+
+  /* строка с логотипом и названием */
+  .hero-top-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
   }
 
   .hero-brand {
     position: static;
     transform: none;
-    margin-bottom: 4px;
+    margin: 0;
+  }
+
+  .hero-brand img {
+    width: 52px;
+    height: auto;
   }
 
   .hero-title {
+    margin: 0;
+    font-size: clamp(20px, 5.4vw, 28px);
+    font-weight: 800;
     white-space: normal;
-    line-height: 1.2;
-    text-align: center;
-    font-size: clamp(18px, 5vw, 26px);
+    color: #fff;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.15);
   }
 
+  /* языковая панель — отдельная строка под заголовком */
   .lang-capsule.lang--on-hero {
     position: static;
     transform: none;
-    margin-top: 6px;
+    display: inline-flex;
+    margin-top: 4px;
+    background: transparent;
     border: 1px solid rgba(255,255,255,0.9);
     border-radius: 999px;
     padding: 3px;
   }
 
   .lang--on-hero button {
+    border: 0;
+    background: transparent;
+    color: #fff;
     padding: 6px 10px;
+    border-radius: 999px;
     font-size: 14px;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .lang--on-hero button.active {
+    background: #fff;
+    color: #EC8D00;
+    box-shadow: 0 2px 8px rgba(0,0,0,.15);
   }
 }
-
-
