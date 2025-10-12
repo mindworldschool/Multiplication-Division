@@ -363,64 +363,47 @@ body{
 @media (max-width: 520px){
   .board{ top: 4%; width: min(60%, 640px); height: min(48%, 320px); }
 }
-/* ===== HERO: всё в одну строку, без наложений ===== */
+/* === HEADER FLEX FIX === */
 
-/* контейнер шапки — одна строка */
-.hero-inner{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:12px;
+/* ПК и планшеты — всё в одну линию */
+@media (min-width: 769px) {
+  header .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: nowrap;
+  }
 
-  /* убираем старые position:absolute */
-  position:relative;
+  header .logo-title {
+    display: flex;
+    align-items: center;
+    gap: 12px; /* расстояние между логотипом и названием */
+  }
+
+  header .lang-capsule {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
 }
 
-/* логотип слева */
-.hero-brand{
-  position:static !important;
-  transform:none !important;
-  flex:0 0 auto;                 /* фиксированный блок */
-  display:flex; align-items:center;
-}
-.hero-brand img{ width:72px; height:auto; display:block; }
+/* Мобильные устройства — лого и название на первой строке, языки на второй */
+@media (max-width: 768px) {
+  header .topbar {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
 
-/* заголовок по центру, умеет сжиматься без переноса */
-.hero-title{
-  position:static !important;
-  transform:none !important;
-  order:2;
-  flex:1 1 auto;                 /* занимает всё свободное */
-  min-width:0;                   /* позволяет text-overflow работать */
-  text-align:center;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-  padding:0 8px;                 /* небольшой отступ от краёв */
-}
+  header .logo-title {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+  }
 
-/* языковая капсула справа */
-.lang-capsule.lang--on-hero{
-  position:static !important;
-  transform:none !important;
-  order:3;
-  flex:0 0 auto;                 /* не растягиваем */
-  display:flex; gap:6px;
-  border:1px solid rgba(255,255,255,.9);
-  border-radius:999px;
-  padding:4px;
-  background:transparent;
-}
-.lang--on-hero button{
-  border:0; background:transparent; color:#fff;
-  padding:8px 10px; border-radius:999px; font-weight:800; line-height:1;
-}
-.lang--on-hero button.active{ background:#fff; color:#EC8D00; }
-
-/* адаптив — чуть уменьшаем размеры на узких экранах,
-   но держим ОДНУ строку, без переноса */
-@media (max-width: 480px){
-  .hero-brand img{ width:56px; }
-  .hero-title{ font-size:clamp(16px, 4.8vw, 22px); }
-  .lang--on-hero button{ padding:6px 8px; font-size:12px; }
+  header .lang-capsule {
+    margin-top: 4px;
+  }
 }
