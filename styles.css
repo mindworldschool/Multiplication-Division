@@ -363,47 +363,52 @@ body{
 @media (max-width: 520px){
   .board{ top: 4%; width: min(60%, 640px); height: min(48%, 320px); }
 }
-/* === HEADER FLEX FIX === */
+/* === MOBILE FIX: складываем элементы, убираем absolute === */
+@media (max-width: 640px){
+  .hero{ padding: 10px 0 12px; }
 
-/* ПК и планшеты — всё в одну линию */
-@media (min-width: 769px) {
-  header .topbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: nowrap;
+  .hero-inner{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:8px;
+    padding: 0 12px;
   }
 
-  header .logo-title {
-    display: flex;
-    align-items: center;
-    gap: 12px; /* расстояние между логотипом и названием */
+  /* главное — перестать позиционировать абсолютно */
+  .hero .hero-brand,
+  .hero .page-title,
+  .hero .lang-capsule{
+    position: static !important;
+    transform: none !important;
   }
 
-  header .lang-capsule {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-}
-
-/* Мобильные устройства — лого и название на первой строке, языки на второй */
-@media (max-width: 768px) {
-  header .topbar {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
+  .hero .hero-brand img{
+    width:52px; height:52px;
   }
 
-  header .logo-title {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 8px;
+  .hero .page-title{
+    font-size: clamp(18px, 5.2vw, 22px);
+    line-height:1.2;
+    text-align:center;
+    margin: 0;
+    max-width: 100%;
+    white-space: normal;         /* разрешить перенос */
+    text-wrap: balance;          /* если поддерживается */
   }
 
-  header .lang-capsule {
-    margin-top: 4px;
+  .hero .lang-capsule{
+    align-self:center;
+    margin-top: 2px;
+    gap:6px;
+    border-width:1px;
+    padding:3px 4px;
+    /* чтобы не перекрывала клики по заголовку */
+    z-index: 0;
+  }
+
+  .hero .lang-capsule button{
+    padding: 6px 10px;
+    line-height:1;
   }
 }
