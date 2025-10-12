@@ -363,71 +363,70 @@ body{
 @media (max-width: 520px){
   .board{ top: 4%; width: min(60%, 640px); height: min(48%, 320px); }
 }
-/* ==== FIX: Logo + title in one row, languages below ==== */
-@media (max-width: 768px) {
-  .hero-inner {
-    display: flex;
-    flex-direction: column;
+/* === MOBILE: 2-строчная шапка без изменения HTML === */
+@media (max-width: 768px){
+  /* превращаем .hero-inner в сетку 2x2:
+     brand | title
+     langs | langs
+  */
+  .hero-inner{
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-areas:
+      "brand title"
+      "langs  langs";
     align-items: center;
-    gap: 6px;
-    padding: 8px 12px;
+    gap: 8px 10px;
+    padding: 10px 12px;
     text-align: center;
   }
 
-  /* первая строка: логотип + заголовок */
-  .hero-top-row {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    flex-wrap: nowrap; /* запрет переносов */
-  }
-
-  .hero-brand {
-    position: static;
-    transform: none;
+  /* ЛОГО слева в первой строке */
+  .hero-brand{
+    grid-area: brand;
+    position: static !important;
+    transform: none !important;
     margin: 0;
-    flex-shrink: 0;
+    justify-self: center;   /* центрируем в своей ячейке */
+  }
+  .hero-brand img{
+    width: 52px; height: auto;
   }
 
-  .hero-brand img {
-    width: 52px;
-    height: auto;
-  }
-
-  .hero-title {
+  /* НАЗВАНИЕ справа от лого (та же строка) */
+  .hero-title,
+  .page-title{             /* на случай другого класса */
+    grid-area: title;
     margin: 0;
-    font-size: clamp(20px, 5vw, 26px);
-    font-weight: 800;
-    color: #fff;
-    text-shadow: 0 2px 6px rgba(0,0,0,.15);
-    white-space: nowrap; /* не переносится */
+    line-height: 1.2;
+    font-size: clamp(18px, 5.2vw, 26px);
+    white-space: normal;   /* можно переносить, но это всё равно 1-я строка сетки */
+    justify-self: start;
+    text-align: left;      /* можно оставить center, если так нравится больше */
   }
 
-  /* вторая строка — языковая панель */
-  .lang-capsule.lang--on-hero {
-    position: static;
-    transform: none;
-    display: inline-flex;
-    justify-content: center;
+  /* ЯЗЫКОВАЯ КАПСУЛА — во 2-й строке и по центру */
+  .lang-capsule.lang--on-hero{
+    grid-area: langs;
+    position: static !important;
+    transform: none !important;
+    justify-self: center;
+    margin-top: 4px;
     background: transparent;
     border: 1px solid rgba(255,255,255,0.9);
     border-radius: 999px;
     padding: 3px;
   }
-
-  .lang--on-hero button {
+  .lang--on-hero button{
+    padding: 6px 10px;
+    font-size: 14px;
     border: 0;
     background: transparent;
     color: #fff;
-    padding: 6px 10px;
-    border-radius: 999px;
-    font-size: 14px;
     font-weight: 800;
-    cursor: pointer;
+    border-radius: 999px;
   }
-
-  .lang--on-hero button.active {
+  .lang--on-hero button.active{
     background: #fff;
     color: #EC8D00;
     box-shadow: 0 2px 8px rgba(0,0,0,.15);
