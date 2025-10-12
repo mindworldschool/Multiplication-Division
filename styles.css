@@ -363,13 +363,43 @@ body{
 @media (max-width: 520px){
   .board{ top: 4%; width: min(60%, 640px); height: min(48%, 320px); }
 }
-@media (max-width: 480px) {
-  .hero-title {
-    font-size: 20px;
+/* ==== Mobile adaptive fix for hero block ==== */
+@media (max-width: 768px) {
+  .hero-inner {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 12px;
+    text-align: center;
   }
+
+  .hero-brand {
+    position: static;
+    transform: none;
+    margin-bottom: 4px;
+  }
+
+  .hero-title {
+    white-space: normal;
+    line-height: 1.2;
+    text-align: center;
+    font-size: clamp(18px, 5vw, 26px);
+  }
+
+  .lang-capsule.lang--on-hero {
+    position: static;
+    transform: none;
+    margin-top: 6px;
+    border: 1px solid rgba(255,255,255,0.9);
+    border-radius: 999px;
+    padding: 3px;
+  }
+
   .lang--on-hero button {
-    padding: 4px 8px;
-    font-size: 13px;
+    padding: 6px 10px;
+    font-size: 14px;
   }
 }
+
 
