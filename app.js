@@ -395,12 +395,127 @@ function setProgressBars(ok, bad, total){
   apply(finalProgress);
 }
 
+
+/* ==== series builder (unique, capped, and mixed-run constraint) ==== */
+function buildQuestionPoolsSplit(){
+  const usePool = state.digitsEnabled && state.digits.length>0;
+  const sel = usePool ? [...state.digits] : null;
+
+  const mkMul = (a,b)=>({a,b,ans:a*b,op:'×'});
+  const mkDiv = (d,q)=>({a:d*q, b:d, ans:q, op:'÷'});
+
+  let poolMul = [];
+  let poolDiv = [];
+
+  const A = sel ? sel : [...Array(10).keys()];
+  for(const a of A){
+    for(let b=0;b<=9;b++){
+      poolMul.push(mkMul(a,b));
+    }
+  }
+  const D = sel ? sel.filter(d=>d!==0) : [1,2,3,4,5,6,7,8,9];
+  for(const d of D){
+    for(let q=0;q<=9;q++){
+      poolDiv.push(mkDiv(d,q));
+    }
+  }
+  return {poolMul, poolDiv};
+}
+function shuffle(arr){ return arr.slice().sort(()=>Math.random()-0.5); }
+function keyOf(q){ return `${q.op}:${q.a}:${q.b}`; }
+function opCode(q){ return q.op==='×' ? 'mul' : 'div'; }
+
+function buildSeriesList(){
+  const N = state.series;
+  const mode = (state.mode==='rnd') ? 'rnd' : state.mode;
+
+  if (mode !== 'rnd'){
+    const {poolMul, poolDiv} = buildQuestionPoolsSplit();
+    const base = mode==='mul' ? poolMul : poolDiv;
+    const pool = shuffle(base);
+    if (N <= pool.length) return pool.slice(0, N);
+    const cap = 2;
+    const counts = new Map();
+    const out = pool.slice(0);
+    pool.forEach(q => counts.set(keyOf(q), 1));
+    while(out.length < N){
+      for(const q of shuffle(base)){
+        const k = keyOf(q);
+        const c = counts.get(k) || 0;
+        if (c < cap){
+          out.push(q);
+          counts.set(k, c+1);
+          if (out.length===N) break;
+        }
+      }
+      if (out.length < N && base.length===0) break;
+    }
+    return shuffle(out);
+  }
+
+  const {poolMul, poolDiv} = buildQuestionPoolsSplit();
+  const uniquePoolSize = new Set([...poolMul.map(keyOf), ...poolDiv.map(keyOf)]).size;
+  const needUniqueOnly = N <= uniquePoolSize;
+  const cap = 2;
+  const counts = new Map();
+  const used = new Set();
+
+  let availMul = shuffle(poolMul);
+  let availDiv = shuffle(poolDiv);
+
+  const take = (pool, allowRepeat) => {
+    for(const q of shuffle(pool)){
+      const k = keyOf(q);
+      const c = counts.get(k) || 0;
+      if (c >= cap) continue;
+      if (!allowRepeat && used.has(k)) continue;
+      // consume once from avail
+      return q;
+    }
+    return null;
+  };
+
+  const out = [];
+  while(out.length < N){
+    const last1 = out.length>=1 ? opCode(out[out.length-1]) : null;
+    const last2 = out.length>=2 ? opCode(out[out.length-2]) : null;
+    const mustSwitch = (last1 && last2 && last1===last2);
+
+    const order = mustSwitch ? (last1==='mul' ? ['div','mul'] : ['mul','div'])
+                             : (Math.random()<0.5 ? ['mul','div'] : ['div','mul']);
+
+    let q = null;
+    for(const op of order){
+      if (op==='mul'){
+        q = take(availMul, !needUniqueOnly);
+        if (q){ availMul = availMul.filter(x => keyOf(x)!==keyOf(q)); break; }
+      } else {
+        q = take(availDiv, !needUniqueOnly);
+        if (q){ availDiv = availDiv.filter(x => keyOf(x)!==keyOf(q)); break; }
+      }
+    }
+    if (!q){
+      // fallback: allow from full pools under cap/uniqueness
+      q = take([...poolMul, ...poolDiv], !needUniqueOnly);
+      if (!q) break;
+    }
+
+    const k = keyOf(q);
+    used.add(k);
+    counts.set(k, (counts.get(k) || 0) + 1);
+    out.push(q);
+  }
+  if (out.length > N) out.length = N;
+  return out;
+}
+
 /* ==== game flow ==== */
 function startGame(){
   state.n=0; state.ok=0; state.bad=0; state.q=null; state.revealed=false;
   if (totalEl) totalEl.textContent = state.series;
   clearBoardHighlight();
   setProgressBars(0,0,state.series);
+  state.queue = buildSeriesList();
   next();
 }
 
@@ -450,7 +565,7 @@ function next(){
   }
 
   state.n++;
-  state.q = genQ();
+  state.q = (state.queue && state.queue[state.n-1]) || genQ();
   if (qText) qText.textContent = `${state.q.a} ${state.q.op} ${state.q.b} = ?`;
   if (ansInput){ ansInput.value = ''; ansInput.focus(); }
   updateScore();
