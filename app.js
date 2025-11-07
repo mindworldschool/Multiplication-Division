@@ -185,7 +185,6 @@ function applyLang(lang){
     if (oDiv) oDiv.textContent = t.modeDiv;
     if (oMix) oMix.textContent = t.modeMix;
   }
-  // чип "Усі/All/..."
   const chipAll = document.querySelector('#digitsGroup .chip[data-digit="all"]');
   if (chipAll) chipAll.textContent = t.all;
 
@@ -194,18 +193,18 @@ function applyLang(lang){
   const backBtn = qs('#backToSettings'); if(backBtn) backBtn.textContent = t.back;
   const confirmBtn = qs('#confirmStart'); if(confirmBtn) confirmBtn.textContent = t.confirm;
 
-  // play
+  // play captions
   const ansInput = qs('#ansInput'); ansInput?.setAttribute('placeholder', t.answerPlaceholder);
   const submitBtn = qs('#submitBtn'); if(submitBtn) submitBtn.textContent = t.answer;
   const nextBtn = qs('#nextBtn'); if(nextBtn) nextBtn.textContent = t.next;
-  const resetBtn = qs('#resetBtn'); if(resetBtn) resetBtn.textContent = t.reset;
+  const resetBtn = qs('#resetBtn'); if(resetBtn) btnText = t.reset;
   const finishBtn = qs('#finishBtn'); if(finishBtn) finishBtn.textContent = t.finish;
 
   // score labels
-  const lblTotal = qs('#lblTotal'); if(lblTotal) lblTotal.firstChild.textContent = t.total + ': ';
-  const lblOk    = qs('#lblOk');    if(lblOk)    lblOk.firstChild.textContent    = t.ok + ': ';
-  const lblBad   = qs('#lblBad');   if(lblBad)   lblBad.firstChild.textContent   = t.bad + ': ';
-  const lblProg  = qs('#lblProg');  if(lblProg)  lblProg.firstChild.textContent  = t.prog + ': ';
+  const lblTotal = qs('#lblTotal'); if(lblTotal) lblTotal.textContent = t.total + ':';
+  const lblOk    = qs('#lblOk');    if(lblOk)    lblOk.textContent    = t.ok    + ':';
+  const lblBad   = qs('#lblBad');   if(lblBad)   lblBad.textContent   = t.bad   + ':';
+  const lblProg  = qs('#lblProg');  if(lblProg)  lblProg.textContent  = t.prog  + ':';
 
   // results screen
   qs('#resTitle')?.replaceChildren(t.results);
@@ -243,12 +242,14 @@ function showScreen(name){
   scrConfirm.hidden  = name!=='confirm';
   scrPlay.hidden     = name!=='play';
   if(scrResults) scrResults.hidden = name!=='results';
+  requestAnimationFrame(()=>window.scrollTo(0,0));
 }
 
 /* ==== language capsule ==== */
 qsa(".lang-capsule button").forEach(b=>{
   b.classList.toggle("active", b.dataset.lang===state.lang);
-  b.addEventListener("click", ()=>{
+  b.addEventListener("click", (e)=>{
+    e.preventDefault();
     state.lang = b.dataset.lang;
     localStorage.setItem("mw_lang", state.lang);
     applyLang(state.lang);
@@ -261,6 +262,7 @@ const modeSel      = qs("#modeSel");
 const seriesSel    = qs("#seriesSel");
 const digitsEnable = qs("#digitsEnable");
 const digitsGroup  = qs("#digitsGroup");
+const lblDigitsToggleEl = qs("#lblDigitsToggle");
 
 const startBtn     = qs("#startBtn");
 const backBtn      = qs("#backToSettings");
@@ -292,11 +294,26 @@ const resAcc   = qs('#resAcc');
 const btnRetry = qs('#btnRetry');
 const btnToSettings = qs('#btnToSettings');
 
+/* ==== hide checkbox + label on UI ==== */
+(function hideDigitsToggle(){
+  const row = (lblDigitsToggleEl?.closest('.form-row')) || (digitsEnable?.closest('.form-row'));
+  if (row) {
+    row.style.display = 'none';
+  } else {
+    if (lblDigitsToggleEl) lblDigitsToggleEl.style.display = 'none';
+    if (digitsEnable) digitsEnable.style.display = 'none';
+  }
+})();
+
 /* ==== init controls ==== */
 if (modeSel)   modeSel.value    = state.mode;
 if (seriesSel) seriesSel.value  = String(state.series);
-if (digitsEnable) digitsEnable.checked = state.digitsEnabled;
-if (digitsGroup)  digitsGroup.classList.toggle("disabled", !state.digitsEnabled);
+
+// чекбокс визуально синхронизируем, но он скрыт и не влияет
+if (digitsEnable) digitsEnable.checked = (state.digits.length > 0) || state.digitsEnabled;
+
+// чипы ВСЕГДА активны
+if (digitsGroup)  digitsGroup.classList.toggle("disabled", false);
 
 // важно: Enter не сабмитит форму
 if (submitBtn) submitBtn.type = "button";
@@ -320,11 +337,13 @@ modeSel?.addEventListener("change", ()=>{
 seriesSel?.addEventListener("change", ()=>{
   state.series = Number(seriesSel.value); localStorage.setItem("mw_series", state.series);
 });
+
+// Чекбокс больше не влияет ни на что — оставляем только сохранение состояния
 digitsEnable?.addEventListener("change", ()=>{
   state.digitsEnabled = digitsEnable.checked;
   localStorage.setItem("mw_digits_enabled", state.digitsEnabled ? "1" : "0");
-  digitsGroup?.classList.toggle("disabled", !state.digitsEnabled);
 });
+
 digitsGroup?.addEventListener("click", (e)=>{
   const b = e.target.closest(".chip"); if(!b) return;
   const v = b.dataset.digit;
@@ -345,12 +364,45 @@ digitsGroup?.addEventListener("click", (e)=>{
   }
   localStorage.setItem("mw_digits", state.digits.join(","));
   syncAllChip();
+
+  // Для консистентности синхронизируем скрытый чекбокс
+  if (digitsEnable) digitsEnable.checked = state.digits.length > 0;
 });
 
 /* ==== flow buttons ==== */
-startBtn?.addEventListener("click", ()=>{ buildConfirm(); safePlay(SND.click); });
-backBtn ?.addEventListener("click", ()=>{ showScreen('settings'); safePlay(SND.click); });
-confirmBtn?.addEventListener("click", ()=>{ startGame(); showScreen('play'); safePlay(SND.click); });
+startBtn?.addEventListener("click", (e)=>{
+  e.preventDefault();
+  // Сохраняем настройки
+  state.mode   = modeSel?.value ?? state.mode;
+  state.series = Number(seriesSel?.value ?? state.series);
+
+  // Запуск игры
+  startGame();
+  showScreen('play');
+
+  // Поздний пересчёт после показа экрана
+  requestAnimationFrame(()=>{
+    window.fitPlayLayout && window.fitPlayLayout();
+    resizeBoardText();
+    setTimeout(resizeBoardText, 60);
+  });
+
+  safePlay(SND.click);
+});
+backBtn ?.addEventListener("click", (e)=>{ e.preventDefault(); showScreen('settings'); safePlay(SND.click); });
+confirmBtn?.addEventListener("click", (e)=>{
+  e.preventDefault();
+  startGame();
+  showScreen('play');
+
+  requestAnimationFrame(()=>{
+    window.fitPlayLayout && window.fitPlayLayout();
+    resizeBoardText();
+    setTimeout(resizeBoardText, 60);
+  });
+
+  safePlay(SND.click);
+});
 
 /* ==== confirm builder ==== */
 function buildConfirm(){
@@ -362,9 +414,9 @@ function buildConfirm(){
     state.mode === 'div' ? T('modeDiv') :
                            T('modeMix');
 
-  const digitsText = state.digitsEnabled
-    ? (state.digits.length ? state.digits.slice().sort((a,b)=>a-b).join(', ') : '—')
-    : T('all');
+  const digitsText = (state.digits.length
+    ? state.digits.slice().sort((a,b)=>a-b).join(', ')
+    : T('all'));
 
   if (confirmList){
     confirmList.innerHTML = `
@@ -373,7 +425,6 @@ function buildConfirm(){
       <li style="grid-column:1 / -1;"><b>${T('digitsToggle')}:</b> ${digitsText}</li>
     `;
   }
-  showScreen('confirm');
 }
 
 /* ==== progress bars ==== */
@@ -395,10 +446,32 @@ function setProgressBars(ok, bad, total){
   apply(finalProgress);
 }
 
+/* ==== resize: цифры занимают ~50% высоты доски ==== */
+function resizeBoardText(){
+  if (!boardEl || !qText) return;
+
+  // убеждаемся, что доска уже в финальном размере
+  if (typeof window.fitPlayLayout === 'function') {
+    window.fitPlayLayout();
+  }
+
+  const rect = boardEl.getBoundingClientRect();
+  const h = rect.height || 0;
+
+  // целимся в 50% высоты (с безопасными рамками)
+  const target = Math.round(h * 0.50);
+  const px = Math.max(24, Math.min(Math.round(h * 0.30), target));
+
+  qText.style.fontSize = px + 'px';
+}
+
+window.addEventListener('resize', resizeBoardText, { passive: true });
+window.addEventListener('orientationchange', resizeBoardText, { passive: true });
+window.addEventListener('pageshow', ()=>setTimeout(resizeBoardText, 50), { passive:true });
 
 /* ==== series builder (unique, capped, and mixed-run constraint) ==== */
 function buildQuestionPoolsSplit(){
-  const usePool = state.digitsEnabled && state.digits.length>0;
+  const usePool = state.digits.length > 0;
   const sel = usePool ? [...state.digits] : null;
 
   const mkMul = (a,b)=>({a,b,ans:a*b,op:'×'});
@@ -424,89 +497,85 @@ function buildQuestionPoolsSplit(){
 function shuffle(arr){ return arr.slice().sort(()=>Math.random()-0.5); }
 function keyOf(q){ return `${q.op}:${q.a}:${q.b}`; }
 function opCode(q){ return q.op==='×' ? 'mul' : 'div'; }
-
+function isZeroQuestion(q){
+  if (q.op === '×') return q.a === 0 || q.b === 0;
+  return q.a === 0;
+}
 function buildSeriesList(){
   const N = state.series;
-  const mode = (state.mode==='rnd') ? 'rnd' : state.mode;
+  const { poolMul, poolDiv } = buildQuestionPoolsSplit();
 
-  if (mode !== 'rnd'){
-    const {poolMul, poolDiv} = buildQuestionPoolsSplit();
-    const base = mode==='mul' ? poolMul : poolDiv;
-    const pool = shuffle(base);
-    if (N <= pool.length) return pool.slice(0, N);
-    const cap = 2;
-    const counts = new Map();
-    const out = pool.slice(0);
-    pool.forEach(q => counts.set(keyOf(q), 1));
-    while(out.length < N){
-      for(const q of shuffle(base)){
-        const k = keyOf(q);
-        const c = counts.get(k) || 0;
-        if (c < cap){
-          out.push(q);
-          counts.set(k, c+1);
-          if (out.length===N) break;
-        }
-      }
-      if (out.length < N && base.length===0) break;
-    }
-    return shuffle(out);
-  }
+  const allPool = (state.mode === 'mul') ? poolMul
+               : (state.mode === 'div') ? poolDiv
+               : [...poolMul, ...poolDiv];
 
-  const {poolMul, poolDiv} = buildQuestionPoolsSplit();
-  const uniquePoolSize = new Set([...poolMul.map(keyOf), ...poolDiv.map(keyOf)]).size;
-  const needUniqueOnly = N <= uniquePoolSize;
-  const cap = 2;
-  const counts = new Map();
-  const used = new Set();
+  const uniqueCount = new Set(allPool.map(keyOf)).size;
+  const capPerItem = (N <= uniqueCount) ? 1 : 2;
 
-  let availMul = shuffle(poolMul);
-  let availDiv = shuffle(poolDiv);
+  const out = [];
+  const used = new Map();
+  let zeroCount = 0;
 
-  const take = (pool, allowRepeat) => {
-    for(const q of shuffle(pool)){
+  function pickFrom(pool){
+    for (let tries = 0; tries < 300; tries++){
+      const q = pool[Math.floor(Math.random()*pool.length)];
       const k = keyOf(q);
-      const c = counts.get(k) || 0;
-      if (c >= cap) continue;
-      if (!allowRepeat && used.has(k)) continue;
-      // consume once from avail
+
+      if ((used.get(k) || 0) >= capPerItem) continue;
+      if (isZeroQuestion(q) && zeroCount >= 1) continue;
+      if (state.mode === 'rnd' && out.length >= 2){
+        const op = opCode(q);
+        const p1 = opCode(out[out.length-1]);
+        const p2 = opCode(out[out.length-2]);
+        if (op === p1 && op === p2) continue;
+      }
       return q;
     }
     return null;
-  };
+  }
 
-  const out = [];
-  while(out.length < N){
-    const last1 = out.length>=1 ? opCode(out[out.length-1]) : null;
-    const last2 = out.length>=2 ? opCode(out[out.length-2]) : null;
-    const mustSwitch = (last1 && last2 && last1===last2);
-
-    const order = mustSwitch ? (last1==='mul' ? ['div','mul'] : ['mul','div'])
-                             : (Math.random()<0.5 ? ['mul','div'] : ['div','mul']);
-
-    let q = null;
-    for(const op of order){
-      if (op==='mul'){
-        q = take(availMul, !needUniqueOnly);
-        if (q){ availMul = availMul.filter(x => keyOf(x)!==keyOf(q)); break; }
-      } else {
-        q = take(availDiv, !needUniqueOnly);
-        if (q){ availDiv = availDiv.filter(x => keyOf(x)!==keyOf(q)); break; }
-      }
-    }
-    if (!q){
-      // fallback: allow from full pools under cap/uniqueness
-      q = take([...poolMul, ...poolDiv], !needUniqueOnly);
+  if (state.mode === 'mul' || state.mode === 'div'){
+    const base = (state.mode === 'mul') ? poolMul : poolDiv;
+    while (out.length < N){
+      const q = pickFrom(base);
       if (!q) break;
+      const k = keyOf(q);
+      used.set(k, (used.get(k)||0) + 1);
+      if (isZeroQuestion(q)) zeroCount++;
+      out.push(q);
     }
+  } else {
+    while (out.length < N){
+      const last1 = out.length>=1 ? opCode(out[out.length-1]) : null;
+      const last2 = out.length>=2 ? opCode(out[out.length-2]) : null;
+      const prefer = (last1 && last2 && last1===last2)
+        ? (last1==='mul' ? 'div' : 'mul')
+        : (Math.random() < 0.5 ? 'mul' : 'div');
 
+      const firstPool  = prefer==='mul' ? poolMul : poolDiv;
+      const secondPool = prefer==='mul' ? poolDiv : poolMul;
+
+      let q = pickFrom(firstPool);
+      if (!q) q = pickFrom(secondPool);
+      if (!q) break;
+
+      const k = keyOf(q);
+      used.set(k, (used.get(k)||0) + 1);
+      if (isZeroQuestion(q)) zeroCount++;
+      out.push(q);
+    }
+  }
+
+  while (out.length < N){
+    const q = allPool[Math.floor(Math.random()*allPool.length)];
+    if (isZeroQuestion(q) && zeroCount >= 1) continue;
     const k = keyOf(q);
-    used.add(k);
-    counts.set(k, (counts.get(k) || 0) + 1);
+    used.set(k, (used.get(k)||0) + 1);
+    if (isZeroQuestion(q)) zeroCount++;
     out.push(q);
   }
-  if (out.length > N) out.length = N;
-  return out;
+
+  return shuffle(out).slice(0, N);
 }
 
 /* ==== game flow ==== */
@@ -516,17 +585,25 @@ function startGame(){
   clearBoardHighlight();
   setProgressBars(0,0,state.series);
   state.queue = buildSeriesList();
+
+  // сразу подгоняем макет
+  window.fitPlayLayout && window.fitPlayLayout();
+
+  // запускаем
   next();
+
+  // поздний пересчёт после старта
+  requestAnimationFrame(()=>{
+    window.fitPlayLayout && window.fitPlayLayout();
+    resizeBoardText();
+    setTimeout(resizeBoardText, 60);
+  });
 }
 
-submitBtn?.addEventListener("click", ()=>{ check(); safePlay(SND.click); });
-nextBtn  ?.addEventListener("click", ()=>{ next();  safePlay(SND.click); });
-resetBtn ?.addEventListener("click", ()=>{ if(ansInput){ ansInput.value=''; ansInput.focus(); } safePlay(SND.click); });
-finishBtn?.addEventListener("click", ()=>{
-  clearBoardHighlight();
-  showScreen('settings');
-  safePlay(SND.click);
-});
+submitBtn?.addEventListener("click", (e)=>{ e.preventDefault(); check(); safePlay(SND.click); });
+nextBtn  ?.addEventListener("click", (e)=>{ e.preventDefault(); next();  safePlay(SND.click); });
+resetBtn ?.addEventListener("click", (e)=>{ e.preventDefault(); if(ansInput){ ansInput.value=''; ansInput.focus(); } safePlay(SND.click); });
+finishBtn?.addEventListener("click", (e)=>{ e.preventDefault(); clearBoardHighlight(); showScreen('settings'); safePlay(SND.click); });
 
 // Enter: сначала показать ответ, второй Enter — следующий пример
 ansInput?.addEventListener("keydown", (e)=>{
@@ -553,7 +630,6 @@ function next(){
     if (resAcc)   resAcc.textContent   = acc + '%';
     setProgressBars(ok, bad, total);
 
-    // умная фраза вместо "Готово"
     const phrase = pickEndPhrase(state.lang, acc);
     const titleEl = document.getElementById('resTitle');
     if (titleEl) titleEl.textContent = phrase;
@@ -568,13 +644,21 @@ function next(){
   state.q = (state.queue && state.queue[state.n-1]) || genQ();
   if (qText) qText.textContent = `${state.q.a} ${state.q.op} ${state.q.b} = ?`;
   if (ansInput){ ansInput.value = ''; ansInput.focus(); }
+
+  // поздний пересчёт после установки текста
+  requestAnimationFrame(()=>{
+    window.fitPlayLayout && window.fitPlayLayout();
+    resizeBoardText();
+    setTimeout(resizeBoardText, 60);
+  });
+
   updateScore();
 }
 
 function genQ(){
   const mode = (state.mode==='rnd') ? (Math.random()<0.5?'mul':'div') : state.mode;
 
-  const usePool = state.digitsEnabled && state.digits.length>0;
+  const usePool = state.digits.length > 0;
   const pool    = usePool ? [...state.digits] : null;
 
   if (mode==='mul'){
@@ -610,7 +694,6 @@ function check(){
     safePlay(SND.bad);
   }
 
-  // показываем правильный ответ
   if (qText) qText.textContent = `${state.q.a} ${state.q.op} ${state.q.b} = ${state.q.ans}`;
 
   updateScore();
@@ -658,6 +741,13 @@ document.addEventListener('click', (e) => {
     stopConfetti();
     startGame();
     showScreen('play');
+
+    requestAnimationFrame(()=>{
+      window.fitPlayLayout && window.fitPlayLayout();
+      resizeBoardText();
+      setTimeout(resizeBoardText, 60);
+    });
+
     safePlay?.(SND?.click);
   }
 
@@ -687,7 +777,7 @@ function runConfetti(duration=3000){
 
   const colors = ['#FDD835','#FF7043','#66BB6A','#42A5F5','#AB47BC'];
   const N = Math.round((cvs.width/DPR) * 0.2);
-  const P = Array.from({length:N}, ()=>({
+  const P = Array.from({length:N}, () => ({
     x: Math.random()*cvs.width,
     y: -Math.random()*cvs.height*0.5,
     r: 2 + Math.random()*4,
