@@ -24,7 +24,7 @@ body{
   background:#EC8D00;
 }
 
-.container{width:min(1150px,96vw);margin:0 auto;padding:0 8px}
+.container{width:min(2400px,96vw);margin:0 auto;padding:0 8px}
 
 /* HERO */
 .hero{
@@ -34,7 +34,7 @@ body{
   padding:0px 0;
 }
 .hero-inner{
-  position:relative; max-width:1100px; margin:0 auto; padding:0 12px;
+  position:relative; max-width:2400px; margin:0 auto; padding:0 12px;
   display:flex; align-items:center; justify-content:center;
 }
 .hero-brand{ position:absolute; left:20px; top:50%; transform:translateY(-50%); }
@@ -76,6 +76,30 @@ body{
   flex-wrap:wrap;
   justify-content:space-between;
   gap:20px;
+  position: relative;
+}
+
+/* КНОПКА BATTLE В ПРАВОМ ВЕРХНЕМ УГЛУ */
+.battle-corner-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  padding: 10px 18px;
+  border-radius: 12px;
+  border: 0;
+  background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+  color: #fff;
+  font-weight: 800;
+  font-size: 15px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+  transition: all 0.3s;
+  z-index: 10;
+}
+
+.battle-corner-btn:hover {
+  box-shadow: 0 6px 16px rgba(255, 107, 53, 0.4);
+  transform: translateY(-2px);
 }
 
 .field{ flex:1 1 240px; }
@@ -88,6 +112,14 @@ body{
 .panel select{
   padding:10px 14px; border:1px solid #ddd; border-radius:14px; background:#fff; font-weight:600;
 }
+
+.panel-btn {
+  flex: 1 1 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 .btn{ padding:8px 12px; border-radius:12px; border:0; background:#f1f1f1; cursor:pointer; font-weight:700; font-size:14px; }
 .btn.start{ background:#ff9a27; color:#fff; }
 .btn.green{ background:#2f8f46; color:#fff; }
@@ -95,7 +127,7 @@ body{
 .btn.ghost{ background:#e6e7ea; color:#2b2b2b; }
 
 .confirm-screen {
-  display: none !important; /* Экран подтверждения отключен */
+  display: none !important;
 }
 
 /* ПОДТВЕРЖДЕНИЕ */
@@ -119,7 +151,7 @@ body{
 .confirm-actions{ display:flex; gap:12px; justify-content:flex-end; margin-top:18px; }
 
 /* ========================================
-   ЭКРАН ИГРЫ - НОВЫЙ LAYOUT
+   ЭКРАН ИГРЫ - СОЛО РЕЖИМ
    ======================================== */
 .play-screen {
   background-color: #EC8D00;
@@ -132,32 +164,44 @@ body{
 
 .play-screen .container {
   display: flex;
-  gap: 20px;
+  gap: 0;
   align-items: stretch;
   flex-wrap: nowrap;
-  max-width: 1400px;
-  flex: 1;
+  max-width: 1920px;
+  width: 100%;
+}
+
+.play-layout-solo {
+  display: grid;
+  grid-template-columns: 75% 25%;
+  gap: 0;
+  width: 100%;
+  max-width: 1920px;
+  margin: 0 auto;
+  align-items: stretch;
 }
 
 /* СЦЕНА - НА ВСЮ ВЫСОТУ */
 .scene {
-  flex: 1 1 72%;
-  min-width: 500px;
+  width: 100%;
   position: relative;
-  min-height: 600px;
-  background: url('assets/images/lion-bg.png') center/cover no-repeat;
-  border-radius: 26px;
+  aspect-ratio: 16/9;
+  background-image: url('assets/images/lion-bg.png');
+  background-position: center center;
+  background-size: contain;
+  background-repeat: no-repeat;
+  border-radius: 26px 0 0 26px;
   box-shadow: var(--shadow);
-  overflow: hidden;
+  overflow: visible;
 }
 
 /* ДОСКА */
 .board {
   position: absolute;
-  right: 5%;
+  right: 8%;
   top: 8%;
-  width: min(55%, 640px);
-  height: min(45%, 340px);
+  width: 50%;
+  height: 40%;
   background: #fff;
   border-radius: 28px;
   border: 5px solid #8A3B00;
@@ -165,8 +209,17 @@ body{
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 16px;
+  padding: 2%;
   overflow: hidden;
+}
+
+/* ДОСКА В БАТЛ-РЕЖИМІ - В ПРАВОМУ ВЕРХНЬОМУ КУТІ */
+.scene-battle .board {
+  width: 45%;
+  height: 40%;
+  right: 8%;
+  top: 8%;
+  transform: none;
 }
 
 .board::before {
@@ -203,11 +256,20 @@ body{
 /* ТЕКСТ ВОПРОСА */
 .question{
   position: relative;
-  z-index: 1;
+  z-index: 2;
   font-weight: 800;
-  /* размер теперь задаёт JS */
-  white-space: nowrap;   /* ← обязательно, чтобы пример не переносился */
-  line-height: 1.05;     /* аккуратнее вертикально */
+  line-height: 1;
+  font-size: min(14vh, 10vw, 100px);
+  max-width: 100%;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ТЕКСТ ВОПРОСА В БАТЛ-РЕЖИМІ - 30% ВІД ВИСОТИ ДОШКИ */
+.scene-battle .question {
+  font-size: min(20vh, 14vw, 100px);
 }
 
 /* БЛОК УПРАВЛЕНИЯ - УЗКИЙ */
@@ -220,12 +282,14 @@ body{
 }
 
 .controls-bottom {
-  flex: 0 0 240px;
-  max-width: 240px;
-  min-width: 220px;
+  width: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
   gap: 14px;
+  padding: 16px 14px;
+  justify-content: space-between;
+  border-radius: 0 26px 26px 0;
 }
 
 /* ПОЛЕ ВВОДА */
@@ -236,8 +300,8 @@ body{
 }
 
 .answer-line input {
-  font-size: 18px;
-  padding: 10px 14px;
+  font-size: 24px;
+  padding: 14px 16px;
   border: 2px solid #ccc;
   border-radius: 12px;
   width: 100%;
@@ -326,6 +390,115 @@ body{
   margin-top: 8px;
 }
 
+/* ========================================
+   БАТЛ РЕЖИМ - ДОШКИ В ПРАВОМУ ВЕРХНЬОМУ КУТІ
+   ======================================== */
+.play-layout-battle {
+  position: relative;
+  width: 100%;
+  max-width: 2400px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  padding: 20px;
+}
+
+.player-zone {
+  position: relative;
+  width: 100%;
+  max-width: 700px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ГРАВЕЦЬ 1 */
+.player-1 {
+  justify-self: end;
+}
+
+/* ГРАВЕЦЬ 2 */
+.player-2 {
+  justify-self: start;
+}
+
+.player-header {
+  text-align: center;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 10px 16px;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.player-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  color: #8A3B00;
+}
+
+.scene-battle {
+  aspect-ratio: 16/9;
+  width: 100%;
+  background-size: cover;
+  background-position: center center;
+}
+
+.controls-battle {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.score-mini {
+  display: flex;
+  justify-content: space-around;
+  gap: 8px;
+  font-size: 12px;
+  margin-top: 8px;
+}
+
+.score-mini span {
+  background: #f8f8f8;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+/* РАЗДЕЛИТЕЛЬ VS - СКРЫТ */
+.battle-divider {
+  display: none;
+}
+
+/* КНОПКА ЗАВЕРШИТЬ БАТЛ - ПІД КОНТЕЙНЕРАМИ ГРАВЦІВ */
+.battle-finish {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: center;
+  margin-top: 15px;
+  z-index: 10;
+}
+
+.battle-finish button {
+  padding: 12px 32px;
+  font-size: 16px;
+  font-weight: 800;
+  border-radius: 14px;
+  border: 0;
+  background: linear-gradient(135deg, #e23d3d 0%, #c62828 100%);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(226, 61, 61, 0.35);
+  transition: all 0.3s;
+}
+
+.battle-finish button:hover {
+  box-shadow: 0 6px 18px rgba(226, 61, 61, 0.45);
+  transform: translateY(-2px);
+}
+
 /* ЭКРАН РЕЗУЛЬТАТОВ */
 .results-screen {
   background: #EC8D00;
@@ -405,24 +578,83 @@ body{
    АДАПТИВ
    ======================================== */
 
-/* Планшеты */
-@media (max-width: 1100px) {
-  .play-screen .container {
-    flex-direction: column;
-    align-items: center;
+/* Планшеты - Соло */
+@media (max-width: 900px) {
+  .play-layout-solo {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+    gap: 20px;
   }
   
   .scene {
     width: 100%;
-    max-width: 100%;
-    min-width: unset;
-    min-height: 500px;
+    aspect-ratio: 16/9;
+    background-size: contain;
+    border-radius: 26px;
   }
   
   .controls-bottom {
     width: 100%;
-    max-width: 500px;
-    flex: 0 0 auto;
+    height: auto;
+    max-width: 600px;
+    margin: 0 auto;
+    border-radius: 26px;
+  }
+  
+  .board {
+    width: 50%;
+    height: 32%;
+    right: 5%;
+    top: 5%;
+  }
+  
+  /* Батл на планшетах - повертаємо до grid */
+  .play-layout-battle {
+    position: static;
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+    gap: 16px;
+    padding: 10px;
+  }
+  
+  .player-zone {
+    position: static;
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+    justify-self: center;
+  }
+  
+  .player-1,
+  .player-2 {
+    justify-self: center;
+  }
+  
+  .player-1 {
+    grid-row: 1;
+  }
+  
+  .player-2 {
+    grid-row: 2;
+  }
+  
+  .battle-finish {
+    grid-row: 3;
+    grid-column: 1;
+    margin-top: 10px;
+  }
+  
+  .scene-battle {
+    aspect-ratio: 16/9;
+    width: 100%;
+    background-size: cover;
+    background-position: center center;
+  }
+  
+  .controls-bottom {
+    height: auto;
+    max-height: none;
   }
 }
 
@@ -444,8 +676,10 @@ body{
   }
   
   .board {
-    width: min(65%, 640px);
-    height: min(50%, 360px);
+    width: 60%;
+    height: 38%;
+    right: 5%;
+    top: 5%;
   }
   
   .result-stats {
@@ -453,7 +687,17 @@ body{
   }
   
   .scene {
-    min-height: 400px;
+    aspect-ratio: 16/9;
+    background-size: contain;
+  }
+  
+  .question {
+    font-size: min(8vh, 6vw, 64px);
+  }
+  
+  .controls-bottom {
+    height: auto;
+    max-height: none;
   }
 }
 
@@ -507,28 +751,48 @@ body{
   }
   
   .board {
-    top: 4%;
-    width: min(70%, 640px);
-    height: min(55%, 360px);
-    padding: 16px;
+    top: 5%;
+    right: 5%;
+    width: 65%;
+    height: 40%;
+    padding: 2%;
   }
   
   .scene {
-    min-height: 350px;
+    aspect-ratio: 16/9;
+    background-size: contain;
+  }
+  
+  .question {
+    font-size: min(7vh, 5vw, 48px);
   }
   
   .controls-bottom {
     min-width: 100%;
+    height: auto;
+    max-height: none;
+  }
+  
+  .scene-battle {
+    aspect-ratio: 16/9;
   }
 }
 
 @media (max-width: 400px) {
   .board {
-    padding: 12px;
+    padding: 1.5%;
+    top: 5%;
+    right: 5%;
+    width: 70%;
+    height: 42%;
+  }
+  
+  .question {
+    font-size: min(6vh, 4.5vw, 40px);
   }
   
   .answer-line input {
-    font-size: 18px;
+    font-size: 16px;
   }
   
   .btn-row-top,
@@ -536,17 +800,18 @@ body{
     grid-template-columns: 1fr;
   }
 }
-/* ── HERO: компактная шапка и одна строка ─────────────────────────── */
-.hero{ padding:10px 0; } /* базово уменьшаем вертикальные отступы */
+
+/* ── HERO: компактная шапка ─────────────────────────── */
+.hero{ padding:10px 0; }
 
 @media (max-width: 980px){
   .hero{ padding:8px 0; }
   .hero-inner{
-    max-width:1100px;
+    max-width:2400px;
     margin:0 auto;
     padding:0 10px;
-    display:grid;                          /* одна строка */
-    grid-template-columns: 56px 1fr auto;  /* логотип | заголовок | язык */
+    display:grid;
+    grid-template-columns: 56px 1fr auto;
     align-items:center;
     gap:8px;
   }
@@ -556,7 +821,7 @@ body{
   .hero-title{
     margin:0;
     text-align:center;
-    font-size:clamp(18px,3.6vw,24px);      /* ↓ шрифт на ~60% при сужении */
+    font-size:clamp(18px,3.6vw,24px);
     line-height:1.15;
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
   }
@@ -575,7 +840,6 @@ body{
   }
 }
 
-/* Очень узкие — показываем компактный селект, кнопки скрываем */
 .lang-select{ display:none; }
 
 @media (max-width: 560px){
@@ -584,14 +848,87 @@ body{
   .hero-brand img{ width:40px; }
   .hero-title{ font-size:clamp(16px,4.2vw,20px); }
 
-  .lang-capsule{ display:none; }          /* скрыть набор кнопок */
+  .lang-capsule{ display:none; }
   .lang-select{
-    display:block;                         /* показать «таблетку»-селект */
+    display:block;
     appearance:none;
     padding:6px 10px;
     border-radius:999px;
     border:1px solid rgba(255,255,255,.9);
     background:transparent;
     color:#fff; font-weight:800;
+  }
+}
+
+/* ── MacBook та середні екрани (900px - 1600px) ────────── */
+@media (min-width: 901px) and (max-width: 1600px) {
+  .container {
+    width: 96vw;
+    max-width: 1920px;
+  }
+  
+  .play-screen .container,
+  .play-layout-battle {
+    max-width: 1920px;
+    width: 100%;
+  }
+  
+  .play-layout-solo {
+    max-width: 1920px;
+  }
+}
+
+/* ── Великі екрани (1600px+) ────────────────────────────── */
+@media (min-width: 1601px) {
+  .container {
+    width: 100%;
+    max-width: 1920px;
+  }
+  
+  .play-layout-solo {
+    max-width: 1920px;
+  }
+  
+  /* Оптимізація розміру фону для великих екранів */
+  .scene {
+    background-size: contain;
+    aspect-ratio: 16/9;
+  }
+}
+
+/* ── Full HD і вище (1920px+) - зберігаємо пропорції ─────── */
+@media (min-width: 1920px) {
+  .play-screen .container {
+    max-width: 1920px;
+    margin: 0 auto;
+  }
+  
+  .play-layout-solo {
+    max-width: 1920px;
+  }
+  
+  .scene {
+    background-size: contain;
+    aspect-ratio: 16/9;
+  }
+  
+  .controls-bottom {
+    width: 100%;
+  }
+}
+
+/* ── Дуже великі екрани 2K+ (2000px+) ────────────────────── */
+@media (min-width: 2000px) {
+  .scene {
+    background-size: contain;
+    aspect-ratio: 16/9;
+  }
+  
+  .play-screen .container {
+    max-width: 1920px;
+  }
+  
+  .play-layout-solo {
+    max-width: 1920px;
   }
 }

@@ -42,6 +42,13 @@ const I18N = {
     modeDiv: "Ділення",
     modeMix: "Змішано (× і ÷)",
     all: "Усі",
+    battle: "Battle",
+    player1: "Гравець 1",
+    player2: "Гравець 2",
+    finishBattle: "Завершити",
+    player1won: "Гравець 1 переміг!",
+    player2won: "Гравець 2 переміг!",
+    tie: "Нічия!",
   },
   en: {
     title: "Multiplication & Division",
@@ -69,6 +76,13 @@ const I18N = {
     modeDiv: "Division",
     modeMix: "Mixed (× & ÷)",
     all: "All",
+    battle: "Battle",
+    player1: "Player 1",
+    player2: "Player 2",
+    finishBattle: "Finish",
+    player1won: "Player 1 won!",
+    player2won: "Player 2 won!",
+    tie: "It's a tie!",
   },
   ru: {
     title: "Умножение и Деление",
@@ -96,6 +110,13 @@ const I18N = {
     modeDiv: "Деление",
     modeMix: "Смешано (× и ÷)",
     all: "Все",
+    battle: "Battle",
+    player1: "Игрок 1",
+    player2: "Игрок 2",
+    finishBattle: "Завершить",
+    player1won: "Игрок 1 победил!",
+    player2won: "Игрок 2 победил!",
+    tie: "Ничья!",
   },
   es: {
     title: "Multiplicación y División",
@@ -123,6 +144,13 @@ const I18N = {
     modeDiv: "División",
     modeMix: "Mixto (× y ÷)",
     all: "Todos",
+    battle: "Battle",
+    player1: "Jugador 1",
+    player2: "Jugador 2",
+    finishBattle: "Terminar",
+    player1won: "¡Jugador 1 ganó!",
+    player2won: "¡Jugador 2 ganó!",
+    tie: "¡Empate!",
   }
 };
 
@@ -137,8 +165,8 @@ const END_PHRASES = {
   en: {
     perfect: ["Wow! 100% — champion!", "Flawless! Keep it up!"],
     great:   ["Awesome result!", "Great job!"],
-    good:    ["Nice work!", "You’re doing great!"],
-    try:     ["You’re on the right track!", "A bit more practice and you’ll nail it!"]
+    good:    ["Nice work!", "You're doing great!"],
+    try:     ["You're on the right track!", "A bit more practice and you'll nail it!"]
   },
   ru: {
     perfect: ["Вау! 100% — чемпион!", "Без единой ошибки! Так держать!"],
@@ -197,10 +225,10 @@ function applyLang(lang){
   const ansInput = qs('#ansInput'); ansInput?.setAttribute('placeholder', t.answerPlaceholder);
   const submitBtn = qs('#submitBtn'); if(submitBtn) submitBtn.textContent = t.answer;
   const nextBtn = qs('#nextBtn'); if(nextBtn) nextBtn.textContent = t.next;
-  const resetBtn = qs('#resetBtn'); if(resetBtn) btnText = t.reset;
+  const resetBtn = qs('#resetBtn'); if(resetBtn) resetBtn.textContent = t.reset;
   const finishBtn = qs('#finishBtn'); if(finishBtn) finishBtn.textContent = t.finish;
 
-  // score labels
+  // score labels — исправлено: обновляем сам span, а не firstChild
   const lblTotal = qs('#lblTotal'); if(lblTotal) lblTotal.textContent = t.total + ':';
   const lblOk    = qs('#lblOk');    if(lblOk)    lblOk.textContent    = t.ok    + ':';
   const lblBad   = qs('#lblBad');   if(lblBad)   lblBad.textContent   = t.bad   + ':';
@@ -214,6 +242,16 @@ function applyLang(lang){
   qs('#resAccLabel')?.replaceChildren(t.acc);
   const btnRetry = qs('#btnRetry'); if(btnRetry) btnRetry.textContent = t.retry;
   const btnToSettings = qs('#btnToSettings'); if(btnToSettings) btnToSettings.textContent = t.toSettings;
+
+  // battle mode
+  const battleBtn = qs('#battleBtn'); if(battleBtn) battleBtn.textContent = '⚔️ ' + t.battle;
+  const finishBattleBtn = qs('#finishBattleBtn'); if(finishBattleBtn) finishBattleBtn.textContent = t.finishBattle;
+  const player1Header = qs('.player-1 .player-header h3'); if(player1Header) player1Header.textContent = t.player1;
+  const player2Header = qs('.player-2 .player-header h3'); if(player2Header) player2Header.textContent = t.player2;
+  const ansInput1 = qs('#ansInput1'); ansInput1?.setAttribute('placeholder', t.answerPlaceholder);
+  const ansInput2 = qs('#ansInput2'); ansInput2?.setAttribute('placeholder', t.answerPlaceholder);
+  const submitBtn1 = qs('#submitBtn1'); if(submitBtn1) submitBtn1.textContent = t.answer;
+  const submitBtn2 = qs('#submitBtn2'); if(submitBtn2) submitBtn2.textContent = t.answer;
 
   // active lang capsule
   qsa(".lang-capsule button").forEach(b=> b.classList.toggle("active", b.dataset.lang===lang));
@@ -230,6 +268,12 @@ const state = {
   // runtime
   n:0, ok:0, bad:0, q:null,
   revealed:false,
+  // battle mode
+  isBattle: false,
+  player1: { n: 0, ok: 0, bad: 0, q: null, revealed: false },
+  player2: { n: 0, ok: 0, bad: 0, q: null, revealed: false },
+  queue1: null,
+  queue2: null,
 };
 
 /* ==== screens ==== */
@@ -256,24 +300,13 @@ qsa(".lang-capsule button").forEach(b=>{
     safePlay(SND.click);
   }, {capture:true});
 });
-// Компактный селект языка для узких экранов
-const langSelect = document.getElementById('langSelect');
-if (langSelect) {
-  langSelect.value = state.lang; // текущее значение
-  langSelect.addEventListener('change', (e) => {
-    state.lang = e.target.value;
-    localStorage.setItem('mw_lang', state.lang);
-    applyLang(state.lang);
-    safePlay?.(SND?.click);
-  });
-}
 
 /* ==== UI refs ==== */
 const modeSel      = qs("#modeSel");
 const seriesSel    = qs("#seriesSel");
-const digitsEnable = qs("#digitsEnable");
+const digitsEnable = qs("#digitsEnable");      // Чекбокс будем прятать
 const digitsGroup  = qs("#digitsGroup");
-const lblDigitsToggleEl = qs("#lblDigitsToggle");
+const lblDigitsToggleEl = qs("#lblDigitsToggle"); // Подпись к чекбоксу
 
 const startBtn     = qs("#startBtn");
 const backBtn      = qs("#backToSettings");
@@ -305,6 +338,24 @@ const resAcc   = qs('#resAcc');
 const btnRetry = qs('#btnRetry');
 const btnToSettings = qs('#btnToSettings');
 
+/* ==== BATTLE MODE REFS ==== */
+const battleBtn = qs("#battleBtn");
+const soloMode = qs("#soloMode");
+const battleMode = qs("#battleMode");
+const qText1 = qs("#qText1");
+const qText2 = qs("#qText2");
+const ansInput1 = qs("#ansInput1");
+const ansInput2 = qs("#ansInput2");
+const submitBtn1 = qs("#submitBtn1");
+const submitBtn2 = qs("#submitBtn2");
+const finishBattleBtn = qs("#finishBattleBtn");
+const ok1 = qs("#ok1");
+const bad1 = qs("#bad1");
+const prog1 = qs("#prog1");
+const ok2 = qs("#ok2");
+const bad2 = qs("#bad2");
+const prog2 = qs("#prog2");
+
 /* ==== hide checkbox + label on UI ==== */
 (function hideDigitsToggle(){
   const row = (lblDigitsToggleEl?.closest('.form-row')) || (digitsEnable?.closest('.form-row'));
@@ -323,7 +374,7 @@ if (seriesSel) seriesSel.value  = String(state.series);
 // чекбокс визуально синхронизируем, но он скрыт и не влияет
 if (digitsEnable) digitsEnable.checked = (state.digits.length > 0) || state.digitsEnabled;
 
-// чипы ВСЕГДА активны
+// чипы ВСЕГДА активны (не блокируем группу)
 if (digitsGroup)  digitsGroup.classList.toggle("disabled", false);
 
 // важно: Enter не сабмитит форму
@@ -386,32 +437,49 @@ startBtn?.addEventListener("click", (e)=>{
   // Сохраняем настройки
   state.mode   = modeSel?.value ?? state.mode;
   state.series = Number(seriesSel?.value ?? state.series);
-
-  // Запуск игры
+  // Запускаем игру
   startGame();
   showScreen('play');
-
-  // Поздний пересчёт после показа экрана
+  
+  // Даємо макету "доробитися", потім перераховуємо
   requestAnimationFrame(()=>{
-    window.fitPlayLayout && window.fitPlayLayout();
+    if (typeof window.fitPlayLayout === 'function') window.fitPlayLayout();
     resizeBoardText();
-    setTimeout(resizeBoardText, 60);
+    setTimeout(resizeBoardText, 60); // Страховка
   });
-
+  
   safePlay(SND.click);
 });
+
+/* ==== BATTLE MODE BUTTON ==== */
+battleBtn?.addEventListener("click", (e) => {
+  e.preventDefault();
+  
+  // Сохраняем настройки
+  state.mode = modeSel?.value ?? state.mode;
+  state.series = Number(seriesSel?.value ?? state.series);
+  state.isBattle = true;
+  
+  // Запускаем батл
+  startBattle();
+  showScreen('play');
+  
+  safePlay(SND.click);
+});
+
 backBtn ?.addEventListener("click", (e)=>{ e.preventDefault(); showScreen('settings'); safePlay(SND.click); });
 confirmBtn?.addEventListener("click", (e)=>{
   e.preventDefault();
   startGame();
   showScreen('play');
-
+  
+  // Даємо макету "доробитися", потім перераховуємо
   requestAnimationFrame(()=>{
-    window.fitPlayLayout && window.fitPlayLayout();
+    if (typeof window.fitPlayLayout === 'function') window.fitPlayLayout();
     resizeBoardText();
     setTimeout(resizeBoardText, 60);
   });
-
+  
   safePlay(SND.click);
 });
 
@@ -457,59 +525,26 @@ function setProgressBars(ok, bad, total){
   apply(finalProgress);
 }
 
-/* ==== resize: авто-подгон цифр по высоте и по ширине ==== */
+/* ==== resize: цифри займають ~30% висоти дошки ==== */
 function resizeBoardText(){
   if (!boardEl || !qText) return;
 
-  // Если есть авто-лейаут сцены — сначала пусть сцена примет финальный размер
+  // Спочатку переконуємося, що дошка у фінальному розмірі
   if (typeof window.fitPlayLayout === 'function') {
     window.fitPlayLayout();
   }
 
-  // Границы доски
   const rect = boardEl.getBoundingClientRect();
   const h = rect.height || 0;
-  const w = rect.width  || 0;
 
-  // Внутренние отступы доски (рамка + padding), чтобы текст не прилипал к краям
-  const cs = getComputedStyle(boardEl);
-  const padL = parseFloat(cs.paddingLeft)  || 0;
-  const padR = parseFloat(cs.paddingRight) || 0;
-  const padT = parseFloat(cs.paddingTop)   || 0;
-  const padB = parseFloat(cs.paddingBottom)|| 0;
+  // Цілимося в 30% висоти дошки
+  const target = Math.round(h * 0.30);
+  const px = Math.max(20, Math.min(Math.round(h * 0.40), target));
 
-  const innerW = Math.max(0, w - padL - padR - 16); // ещё небольшой «воздух» 16px
-  const innerH = Math.max(0, h - padT - padB - 16);
-
-  // Цели: не более 50% высоты и не шире доступной ширины
-  const MAX_H_RATIO   = 0.30; // ← МЕНЯЙТЕ ЭТО ЧИСЛО, если хотите уменьшить/увеличить долю высоты
-  const MIN_PX        = 24;   // минимальный размер шрифта
-  const MAX_PX_BY_H   = Math.max(MIN_PX, Math.floor(innerH * MAX_H_RATIO));
-
-  // Быстрый бинарный подбор размера, чтобы текст целиком влезал по ширине и высоте
-  qText.style.whiteSpace = 'nowrap'; // перестраховка
-  let lo = MIN_PX, hi = MAX_PX_BY_H, best = MIN_PX;
-
-  // Временная функция проверки «влез/не влез»
-  const fits = (px) => {
-    qText.style.fontSize = px + 'px';
-    // принудить реflow
-    const sw = qText.scrollWidth;
-    const sh = qText.scrollHeight;
-    return (sw <= innerW) && (sh <= innerH * 0.9); // 0.9 — небольшой запас по высоте
-  };
-
-  // Бинарный поиск оптимального размера
-  for (let i = 0; i < 18; i++) {
-    const mid = Math.floor((lo + hi) / 2);
-    if (fits(mid)) { best = mid; lo = mid + 1; }
-    else { hi = mid - 1; }
-  }
-
-  qText.style.fontSize = best + 'px';
+  qText.style.fontSize = px + 'px';
+  qText.style.lineHeight = '1';
+  qText.style.letterSpacing = '0';
 }
-
-
 window.addEventListener('resize', resizeBoardText, { passive: true });
 window.addEventListener('orientationchange', resizeBoardText, { passive: true });
 window.addEventListener('pageshow', ()=>setTimeout(resizeBoardText, 50), { passive:true });
@@ -625,23 +660,27 @@ function buildSeriesList(){
 
 /* ==== game flow ==== */
 function startGame(){
+  // Скрываем батл, показываем соло
+  state.isBattle = false;
+  if (soloMode) soloMode.hidden = false;
+  if (battleMode) battleMode.hidden = true;
+  
   state.n=0; state.ok=0; state.bad=0; state.q=null; state.revealed=false;
   if (totalEl) totalEl.textContent = state.series;
   clearBoardHighlight();
   setProgressBars(0,0,state.series);
   state.queue = buildSeriesList();
-
-  // сразу подгоняем макет
-  window.fitPlayLayout && window.fitPlayLayout();
-
-  // запускаем
+  
+  // Перше підлаштування
+  if (typeof window.fitPlayLayout === 'function') window.fitPlayLayout();
+  resizeBoardText();
+  
   next();
-
-  // поздний пересчёт после старта
+  
+  // І ще один пересчет після того, як все "встане"
   requestAnimationFrame(()=>{
-    window.fitPlayLayout && window.fitPlayLayout();
+    if (typeof window.fitPlayLayout === 'function') window.fitPlayLayout();
     resizeBoardText();
-    setTimeout(resizeBoardText, 60);
   });
 }
 
@@ -688,15 +727,14 @@ function next(){
   state.n++;
   state.q = (state.queue && state.queue[state.n-1]) || genQ();
   if (qText) qText.textContent = `${state.q.a} ${state.q.op} ${state.q.b} = ?`;
-  if (ansInput){ ansInput.value = ''; ansInput.focus(); }
-
-  // поздний пересчёт после установки текста
+  
+  // Даємо DOM викласти текст, потім міряємо
   requestAnimationFrame(()=>{
-    window.fitPlayLayout && window.fitPlayLayout();
+    if (typeof window.fitPlayLayout === 'function') window.fitPlayLayout();
     resizeBoardText();
-    setTimeout(resizeBoardText, 60);
   });
-
+  
+  if (ansInput){ ansInput.value = ''; ansInput.focus(); }
   updateScore();
 }
 
@@ -786,13 +824,14 @@ document.addEventListener('click', (e) => {
     stopConfetti();
     startGame();
     showScreen('play');
-
+    
+    // Даємо макету "доробитися", потім перераховуємо
     requestAnimationFrame(()=>{
-      window.fitPlayLayout && window.fitPlayLayout();
+      if (typeof window.fitPlayLayout === 'function') window.fitPlayLayout();
       resizeBoardText();
       setTimeout(resizeBoardText, 60);
     });
-
+    
     safePlay?.(SND?.click);
   }
 
@@ -801,6 +840,252 @@ document.addEventListener('click', (e) => {
     stopConfetti();
     showScreen('settings');
     safePlay?.(SND?.click);
+  }
+});
+
+/* ==== BATTLE MODE LOGIC ==== */
+
+function startBattle() {
+  // Инициализация состояния батла
+  state.player1 = { n: 0, ok: 0, bad: 0, q: null, revealed: false };
+  state.player2 = { n: 0, ok: 0, bad: 0, q: null, revealed: false };
+  
+  // Скрываем соло, показываем батл
+  if (soloMode) soloMode.hidden = true;
+  if (battleMode) battleMode.hidden = false;
+  
+  // Генерируем очереди вопросов для обоих
+  state.queue1 = buildSeriesList();
+  state.queue2 = buildSeriesList();
+  
+  // Первые вопросы
+  nextBattle();
+}
+
+function nextBattle() {
+  const p1 = state.player1;
+  const p2 = state.player2;
+  
+  // Проверка завершения
+  if (p1.n >= state.series && p2.n >= state.series) {
+    showBattleResults();
+    return;
+  }
+  
+  // Игрок 1
+  if (p1.n < state.series) {
+    p1.n++;
+    p1.q = state.queue1[p1.n - 1];
+    p1.revealed = false;
+    
+    if (qText1) qText1.textContent = `${p1.q.a} ${p1.q.op} ${p1.q.b} = ?`;
+    if (ansInput1) { ansInput1.value = ''; ansInput1.disabled = false; ansInput1.focus(); }
+    
+    const board1 = qs(".player-1 .board");
+    if (board1) {
+      board1.classList.remove('is-correct', 'is-wrong');
+    }
+  }
+  
+  // Игрок 2
+  if (p2.n < state.series) {
+    p2.n++;
+    p2.q = state.queue2[p2.n - 1];
+    p2.revealed = false;
+    
+    if (qText2) qText2.textContent = `${p2.q.a} ${p2.q.op} ${p2.q.b} = ?`;
+    if (ansInput2) { ansInput2.value = ''; ansInput2.disabled = false; }
+    
+    const board2 = qs(".player-2 .board");
+    if (board2) {
+      board2.classList.remove('is-correct', 'is-wrong');
+    }
+  }
+  
+  updateBattleScore();
+  
+  // Ресайз досок
+  requestAnimationFrame(() => {
+    resizeBattleBoards();
+    setTimeout(resizeBattleBoards, 60);
+  });
+}
+
+function checkBattle(playerNum) {
+  const player = playerNum === 1 ? state.player1 : state.player2;
+  const ansInput = playerNum === 1 ? ansInput1 : ansInput2;
+  const qText = playerNum === 1 ? qText1 : qText2;
+  const board = qs(`.player-${playerNum} .board`);
+  
+  if (!player.q || player.revealed) return;
+  
+  const s = ansInput?.value.trim() ?? '';
+  const v = Number(s);
+  if (s === '' || Number.isNaN(v)) {
+    ansInput?.focus();
+    return;
+  }
+  
+  player.revealed = true;
+  const isRight = (v === player.q.ans);
+  
+  if (isRight) {
+    player.ok++;
+    if (board) {
+      board.classList.remove('is-correct', 'is-wrong');
+      board.classList.add('is-correct');
+    }
+    safePlay(SND.ok);
+  } else {
+    player.bad++;
+    if (board) {
+      board.classList.remove('is-correct', 'is-wrong');
+      board.classList.add('is-wrong');
+    }
+    safePlay(SND.bad);
+  }
+  
+  // Показываем правильный ответ
+  if (qText) qText.textContent = `${player.q.a} ${player.q.op} ${player.q.b} = ${player.q.ans}`;
+  if (ansInput) ansInput.disabled = true;
+  
+  updateBattleScore();
+  
+  // Автопереход когда оба ответили
+  if (state.player1.revealed && state.player2.revealed) {
+    setTimeout(() => nextBattle(), 1500);
+  }
+}
+
+function updateBattleScore() {
+  const p1 = state.player1;
+  const p2 = state.player2;
+  
+  if (ok1) ok1.textContent = p1.ok;
+  if (bad1) bad1.textContent = p1.bad;
+  if (prog1) prog1.textContent = `${Math.min(p1.n, state.series)}/${state.series}`;
+  
+  if (ok2) ok2.textContent = p2.ok;
+  if (bad2) bad2.textContent = p2.bad;
+  if (prog2) prog2.textContent = `${Math.min(p2.n, state.series)}/${state.series}`;
+}
+
+function resizeBattleBoards() {
+  const board1 = qs(".player-1 .board");
+  const board2 = qs(".player-2 .board");
+  
+  if (board1 && qText1) resizeBoardTextCustom(board1, qText1);
+  if (board2 && qText2) resizeBoardTextCustom(board2, qText2);
+}
+
+function resizeBoardTextCustom(boardEl, qText) {
+  if (!boardEl || !qText) return;
+  
+  if (typeof window.fitPlayLayout === 'function') {
+    window.fitPlayLayout();
+  }
+  
+  const rect = boardEl.getBoundingClientRect();
+  const h = rect.height || 0;
+  const w = rect.width || 0;
+  
+  const cs = getComputedStyle(boardEl);
+  const padL = parseFloat(cs.paddingLeft) || 0;
+  const padR = parseFloat(cs.paddingRight) || 0;
+  const padT = parseFloat(cs.paddingTop) || 0;
+  const padB = parseFloat(cs.paddingBottom) || 0;
+  
+  const innerW = Math.max(0, w - padL - padR - 16);
+  const innerH = Math.max(0, h - padT - padB - 16);
+  
+  const MAX_H_RATIO = 0.30;
+  const MIN_PX = 20;
+  const MAX_PX_BY_H = Math.max(MIN_PX, Math.floor(innerH * MAX_H_RATIO));
+  
+  qText.style.whiteSpace = 'nowrap';
+  let lo = MIN_PX, hi = MAX_PX_BY_H, best = MIN_PX;
+  
+  const fits = (px) => {
+    qText.style.fontSize = px + 'px';
+    const sw = qText.scrollWidth;
+    const sh = qText.scrollHeight;
+    return (sw <= innerW) && (sh <= innerH * 0.9);
+  };
+  
+  for (let i = 0; i < 18; i++) {
+    const mid = Math.floor((lo + hi) / 2);
+    if (fits(mid)) { best = mid; lo = mid + 1; }
+    else { hi = mid - 1; }
+  }
+  
+  qText.style.fontSize = best + 'px';
+}
+
+function showBattleResults() {
+  const p1 = state.player1;
+  const p2 = state.player2;
+  
+  const winner = p1.ok > p2.ok ? 1 : (p2.ok > p1.ok ? 2 : 0);
+  
+  // Показываем результаты
+  const total = state.series;
+  
+  if (resTotal) resTotal.textContent = total;
+  if (resOk) resOk.textContent = `${p1.ok} / ${p2.ok}`;
+  if (resBad) resBad.textContent = `${p1.bad} / ${p2.bad}`;
+  if (resAcc) {
+    const acc1 = total ? Math.round((p1.ok / total) * 100) : 0;
+    const acc2 = total ? Math.round((p2.ok / total) * 100) : 0;
+    resAcc.textContent = `${acc1}% / ${acc2}%`;
+  }
+  
+  const titleEl = qs('#resTitle');
+  if (titleEl) {
+    const t = I18N[state.lang] || I18N.ua;
+    if (winner === 1) titleEl.textContent = '🏆 ' + t.player1won;
+    else if (winner === 2) titleEl.textContent = '🏆 ' + t.player2won;
+    else titleEl.textContent = '🤝 ' + t.tie;
+  }
+  
+  showScreen('results');
+  safePlay(SND.fanfare);
+  runConfetti(3500);
+}
+
+// Обработчики кнопок батла
+submitBtn1?.addEventListener("click", (e) => {
+  e.preventDefault();
+  checkBattle(1);
+  safePlay(SND.click);
+});
+
+submitBtn2?.addEventListener("click", (e) => {
+  e.preventDefault();
+  checkBattle(2);
+  safePlay(SND.click);
+});
+
+finishBattleBtn?.addEventListener("click", (e) => {
+  e.preventDefault();
+  showScreen('settings');
+  state.isBattle = false;
+  if (soloMode) soloMode.hidden = false;
+  if (battleMode) battleMode.hidden = true;
+  safePlay(SND.click);
+});
+
+// Enter для игроков
+ansInput1?.addEventListener("keydown", (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    checkBattle(1);
+  }
+});
+
+ansInput2?.addEventListener("keydown", (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    checkBattle(2);
   }
 });
 
