@@ -257,9 +257,21 @@ function applyLang(lang){
   qsa(".lang-capsule button").forEach(b=> b.classList.toggle("active", b.dataset.lang===lang));
 }
 
-/* ==== state ==== */
+/* ==== state (UPDATED WITH URL LOGIC) ==== */
+// 1. Функция для чтения ?lang=...
+const getUrlParam = (name) => {
+  const match = new RegExp('[?&]' + name + '=([^&]*)').exec(window.location.search);
+  return match && decodeURIComponent(match[1].replace(/\+/g, ' '));
+};
+
+// 2. Определяем язык: Ссылка > Сохраненное > UA
+const urlLang = getUrlParam('lang');
+const savedLang = localStorage.getItem("mw_lang");
+// Проверяем, есть ли такой язык в словаре I18N, иначе берем сохраненный или ua
+const initLang = (urlLang && I18N[urlLang]) ? urlLang : (savedLang || "ua");
+
 const state = {
-  lang:   localStorage.getItem("mw_lang")   || "ua",
+  lang:   initLang,
   mode:   localStorage.getItem("mw_mode")   || "mul",  // mul|div|rnd
   series: Number(localStorage.getItem("mw_series") || 10),
   digitsEnabled: localStorage.getItem("mw_digits_enabled")==="1",
